@@ -1,0 +1,23 @@
+{
+  "name": "receipt-generator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "download-fonts": "node scripts/download-fonts.js",
+    "test": "node test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@vercel/og": "^0.8.6",
+    "cors": "^2.8.5",
+    "micro": "^10.0.1",
+    "satori": "^0.18.3",
+    "sharp": "^0.34.5"
+  }
+}
