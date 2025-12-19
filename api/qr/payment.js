@@ -4,7 +4,7 @@
  */
 
 const Joi = require("joi");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 const { downloadImageAsBase64 } = require("../../utils/imageBase64");
 const { generateQr } = require("../../utils/generateQr");
 const { createQrTemplate } = require("../../utils/qr-template");
@@ -114,7 +114,7 @@ module.exports = async (req, res) => {
     const jpgBuffer = await convertSvgToJpg(svgString);
 
     // --- Subir a S3 ---
-    const filename = `${uuidv4()}-${Date.now()}.jpg`;
+    const filename = `${crypto.randomUUID()}-${Date.now()}.jpg`;
     const uploadResult = await uploadFileToS3({
       path: 'qr-codes',
       filename,
