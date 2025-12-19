@@ -3,8 +3,10 @@
  * Run with: node server.js
  */
 
+require('dotenv').config();
 const http = require('http');
-const handler = require('./api/generate-receipt');
+const receiptHandler = require('./api/generate-receipt');
+const qrHandler = require('./routes/qrCodes');
 
 const PORT = process.env.PORT || 3000;
 
@@ -15,13 +17,20 @@ const server = http.createServer(async (req, res) => {
   // Add query params to req
   req.query = Object.fromEntries(url.searchParams);
   
-  // Only handle /api/generate-receipt
-  if (!url.pathname.startsWith('/api/generate-receipt')) {
+  // Route handling
+  if (url.pathname.startsWith('/api/generate-receipt')) {
+    await handleRequest(req, res, receiptHandler);
+  } else if (url.pathname.startsWith('/qr/payment')) {
+    await handleRequest(req, res, qrHandler);
+  } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found. Use POST /api/generate-receipt' }));
+    res.end(JSON.stringify({ error: 'Not found. Available endpoints: POST /api/generate-receipt, POST /qr/payment' }));
     return;
   }
+});
 
+// Helper function to handle requests
+async function handleRequest(req, res, handler) {
   // Parse JSON body for POST requests
   if (req.method === 'POST') {
     let body = '';
@@ -66,16 +75,20 @@ const server = http.createServer(async (req, res) => {
     
     await handler(req, res);
   }
-});
+}
 
 server.listen(PORT, () => {
   console.log(`🧾 Receipt Generator Server running at http://localhost:${PORT}`);
   console.log(`\nEndpoints:`);
   console.log(`  POST /api/generate-receipt          → Returns PNG image`);
   console.log(`  POST /api/generate-receipt?response=base64  → Returns base64 JSON`);
-  console.log(`\nExample test command:`);
-  console.log(`  curl -X POST http://localhost:${PORT}/api/generate-receipt \\`);
+  console.log(`  POST /qr/payment                    → Returns QR JPG image`);
+  console.log(`\nExample test commands:`);
+  console.log(`  Receipt: curl -X POST http://localhost:${PORT}/api/generate-receipt \\`);
   console.log(`    -H "Content-Type: application/json" \\`);
   console.log(`    -d @example-request.json \\`);
   console.log(`    --output receipt.png`);
+  console.log(`  QR: curl -X POST http://localhost:${PORT}/qr/payment \\`);
+  console.log(`    -H "Content-Type: application/json" \\`);
+  console.log(`    -d '{"external_reference":"TEST-123","data":"https://example.com","business":{"logo":"https://via.placeholder.com/130x45/2563eb/ffffff?text=LOGO","main_color_brand":"#2563eb","secondary_color_brand":"#f3f4f6"}}'`);
 });
