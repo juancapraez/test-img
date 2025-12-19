@@ -37,7 +37,7 @@ function createQrTemplate(data) {
             style: {
               display: 'flex',
               flexDirection: 'column',
-              width: terminal ? qrWidth - 50 : qrWidth - 25,
+              width: qrWidth - 50,
               height: '100%',
               backgroundColor: '#ffffff',
               borderRadius: 10,
