@@ -87,8 +87,8 @@ function convertToSatoriElement(node) {
 
 async function renderSvg(template, options = {}) {
   const defaultOptions = {
-    width: 700,
-    height: 760,
+    width: 750, // 500 * 1.5 for payment receipts
+    height: 1425, // 950 * 1.5 to match new template height
     fontFamily: 'Red Hat Display',
   };
 

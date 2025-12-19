@@ -88,9 +88,12 @@ router.post("/qr/payment", async (req, res) => {
       secondary_color_brand,
     });
 
+    // Dynamic height based on terminal presence
+    const imageHeight = terminal ? 820 : 760;
+
     // --- Generar SVG y convertir en imagen JPG ---
-    const svgString = await renderSvg(template);
-    const jpgBuffer = await convertSvgToJpg(svgString);
+    const svgString = await renderSvg(template, { height: imageHeight });
+    const jpgBuffer = await convertSvgToJpg(svgString, { height: imageHeight });
 
     // --- Subir a S3 ---
     const filename = `${uuidv4()}-${Date.now()}.jpg`;

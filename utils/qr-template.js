@@ -3,6 +3,21 @@
  * Generates JSX-like structure for QR code rendering
  */
 
+function maskBusinessName(name) {
+  if (!name) return name;
+  
+  return name
+    .split(' ')
+    .map(word => {
+      if (!word || word.length <= 3) {
+        return word;
+      }
+      // Take first 2 letters + 3 asterisks
+      return word.substring(0, 2) + '***';
+    })
+    .join(' ');
+}
+
 function createQrTemplate(data) {
   const {
     qrDataUri,
@@ -13,15 +28,16 @@ function createQrTemplate(data) {
     secondary_color_brand = '#f3f4f6',
   } = data;
 
+  // Dynamic height based on terminal presence
   const qrWidth = 700;
-  const qrHeight = 760;
+  const qrHeight = terminal ? 820 : 760; // Smaller when no terminal
 
   return {
     type: 'div',
     props: {
       style: {
         display: 'flex',
-        flexDirection: 'row',
+        flexDirection: 'column',
         width: qrWidth,
         height: qrHeight,
         backgroundColor: secondary_color_brand,
@@ -37,7 +53,7 @@ function createQrTemplate(data) {
             style: {
               display: 'flex',
               flexDirection: 'column',
-              width: qrWidth - 50,
+              width: '100%',
               height: '100%',
               backgroundColor: '#ffffff',
               borderRadius: 10,
@@ -129,42 +145,56 @@ function createQrTemplate(data) {
                         ],
                       },
                     },
+                    // Alert message - shown only if terminal exists
+                    terminal ? {
+                      type: 'div',
+                      props: {
+                        style: {
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          padding: '8px 12px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: 6,
+                          border: '1px solid #e9ecef',
+                        },
+                        children: {
+                          type: 'span',
+                          props: {
+                            style: {
+                              fontSize: 13,
+                              color: '#6c757d',
+                              textAlign: 'center',
+                              lineHeight: 1.4,
+                              gap: 5,
+                            },
+                            children: [
+                              {
+                                type: 'span',
+                                props: {
+                                  style: {
+                                    fontWeight: 700,
+                                  },
+                                  children: 'Al pagar verás el nombre:',
+                                },
+                              },
+                              {
+                                type: 'span',
+                                props: {
+                                  children: `${terminal} (${maskBusinessName(terminal)}) | Trazo Tecnología`,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    } : null,
                   ],
                 },
               },
             ],
           },
         },
-        // Terminal text column - shown only if terminal exists
-        terminal ? {
-          type: 'div',
-          props: {
-            style: {
-              display: 'flex',
-              width: '30px',
-              height: '100%',
-              justifyContent: 'center',
-              alignItems: 'center',
-            },
-            children: {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: 10,
-                  fontWeight: 400,
-                  color: '#9ca3af',
-                  whiteSpace: 'nowrap',
-                  transform: 'rotate(90deg)',
-                  transformOrigin: 'center',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-                children: terminal,
-              },
-            },
-          },
-        } : null,
       ],
     },
   };

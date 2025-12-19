@@ -7,6 +7,7 @@ require('dotenv').config();
 const http = require('http');
 const receiptHandler = require('./api/generate-receipt');
 const qrHandler = require('./routes/qrCodes');
+const receiptsHandler = require('./routes/receipts/images');
 
 const PORT = process.env.PORT || 3000;
 
@@ -22,9 +23,13 @@ const server = http.createServer(async (req, res) => {
     await handleRequest(req, res, receiptHandler);
   } else if (url.pathname.startsWith('/qr/payment')) {
     await handleRequest(req, res, qrHandler);
+  } else if (url.pathname.startsWith('/receipt/image/')) {
+    await handleRequest(req, res, receiptsHandler);
+  } else if (url.pathname.startsWith('/api/receipts/')) {
+    await handleRequest(req, res, receiptsHandler);
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found. Available endpoints: POST /api/generate-receipt, POST /qr/payment' }));
+    res.end(JSON.stringify({ error: 'Not found. Available endpoints: POST /api/generate-receipt, POST /qr/payment, POST /receipt/image/payment, POST /receipt/image/payout, POST /api/receipts/payment, POST /api/receipts/payout' }));
     return;
   }
 });
@@ -83,6 +88,10 @@ server.listen(PORT, () => {
   console.log(`  POST /api/generate-receipt          → Returns PNG image`);
   console.log(`  POST /api/generate-receipt?response=base64  → Returns base64 JSON`);
   console.log(`  POST /qr/payment                    → Returns QR JPG image`);
+  console.log(`  POST /receipt/image/payment         → Returns payment receipt JPG`);
+  console.log(`  POST /receipt/image/payout          → Returns payout receipt JPG`);
+  console.log(`  POST /api/receipts/payment           → Returns payment receipt JPG (Vercel)`);
+  console.log(`  POST /api/receipts/payout            → Returns payout receipt JPG (Vercel)`);
   console.log(`\nExample test commands:`);
   console.log(`  Receipt: curl -X POST http://localhost:${PORT}/api/generate-receipt \\`);
   console.log(`    -H "Content-Type: application/json" \\`);

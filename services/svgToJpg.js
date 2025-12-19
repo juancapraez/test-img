@@ -7,9 +7,12 @@ const sharp = require('sharp');
 
 async function convertSvgToJpg(svgString, options = {}) {
   const defaultOptions = {
+    width: 700,
+    height: 760, // Default height
     format: 'jpeg',
-    quality: 90,
+    quality: 95,
     background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
+    density: 300, // Higher DPI for better quality
   };
 
   const convertOptions = { ...defaultOptions, ...options };
@@ -17,10 +20,16 @@ async function convertSvgToJpg(svgString, options = {}) {
   try {
     const buffer = Buffer.from(svgString);
     
-    const jpgBuffer = await sharp(buffer)
-      .resize(700, 760) // Ensure consistent dimensions
+    const jpgBuffer = await sharp(buffer, { density: convertOptions.density })
+      .resize(convertOptions.width, convertOptions.height, {
+        fit: 'fill',
+        kernel: sharp.kernel.lanczos3, // Best quality for downscaling
+      })
       .flatten(convertOptions.background)
-      .jpeg({ quality: convertOptions.quality })
+      .jpeg({ 
+        quality: convertOptions.quality,
+        progressive: true, // Better for web
+      })
       .toBuffer();
 
     return jpgBuffer;
