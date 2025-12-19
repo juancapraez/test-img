@@ -190,7 +190,7 @@ module.exports = async (req, res) => {
     // Footer with text and logo: 20 * 1.5 + margin 10 * 1.5 = 30 + 15 = 45
     // Total base height = 75 + 60 + 135 + 55.5 + 45 + 17 + 247.5 + 17 + 211.5 + 211.5 + 17 + 45 = 1137
     
-    const baseHeight = 1152 + 60 + (descriptionLine2 ? 30 : 0) + (clientLine2 ? 30 : 0);
+    const baseHeight = 1142 + 60 + (descriptionLine2 ? 30 : 0) + (clientLine2 ? 30 : 0);
     const baseWidth = 720; // 480 * 1.5
     
     // Apply resolution multiplier

@@ -145,7 +145,10 @@ function createReceiptTemplate(data) {
                     flexDirection: 'column',
                     backgroundColor: 'rgba(255, 255, 255, 0.8)',
                     borderRadius: 8 * 1.5,
-                    padding: 16 * 1.5,
+                    paddingTop: 16 * 1.5,
+                    paddingBottom: 8 * 1.5,
+                    paddingLeft: 0,
+                    paddingRight: 0,
                     marginBottom: 8 * 1.5,
                   },
                   children: [
@@ -389,7 +392,10 @@ function createReceiptTemplate(data) {
                     flexDirection: 'column',
                     backgroundColor: 'rgba(255, 255, 255, 0.8)',
                     borderRadius: 8 * 1.5,
-                    padding: 16 * 1.5,
+                    paddingTop: 16 * 1.5,
+                    paddingBottom: 16 * 1.5,
+                    paddingLeft: 0,
+                    paddingRight: 0,
                     marginBottom: 8 * 1.5,
                   },
                   children: [
