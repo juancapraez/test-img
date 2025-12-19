@@ -5,14 +5,14 @@
 
 const crypto = require("crypto");
 const Joi = require("joi");
-const { downloadImageAsBase64 } = require("../../../../utils/imageBase64");
-const { uploadFileToS3 } = require("../../../../services/uploadS3");
-const { createReceiptTemplate } = require("../../../../utils/receipt-template");
-const { renderSvg } = require("../../../../services/satoriRenderer");
-const { convertSvgToJpg } = require("../../../../services/svgToJpg");
-const { humanDate } = require("../../../../utils/humanDate");
-const { formatNumber } = require("../../../../utils/formatNumber");
-const { TRAZO_LOGO_BASE64 } = require("../../../../utils/trazo-logo");
+const { downloadImageAsBase64 } = require("../../../utils/imageBase64");
+const { uploadFileToS3 } = require("../../../services/uploadS3");
+const { createReceiptTemplate } = require("../../../utils/receipt-template");
+const { renderSvg } = require("../../../services/satoriRenderer");
+const { convertSvgToJpg } = require("../../../services/svgToJpg");
+const { humanDate } = require("../../../utils/humanDate");
+const { formatNumber } = require("../../../utils/formatNumber");
+const { TRAZO_LOGO_BASE64 } = require("../../../utils/trazo-logo");
 
 // --- In-memory logo cache with 12-hour TTL ---
 const logoCache = new Map();
