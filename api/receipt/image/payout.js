@@ -234,20 +234,10 @@ module.exports = async (req, res) => {
         <defs>
           <pattern id="watermark" patternUnits="userSpaceOnUse" width="100" height="100" patternTransform="rotate(-45)">
             <line x1="0" y1="0" x2="100" y2="100" stroke="rgba(255, 0, 0, 0.2)" stroke-width="20"/>
-            <text x="50" y="50" font-family="sans-serif" font-size="16" fill="rgba(255, 0, 0, 0.3)" text-anchor="middle">TEST</text>
+            <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(255, 0, 0, 0.15)" stroke-width="10"/>
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#watermark)" opacity="0.5"/>
-        <text x="50%" y="50%" 
-              font-family="sans-serif" 
-              font-size="36" 
-              font-weight="700" 
-              fill="rgba(255, 0, 0, 0.4)" 
-              text-anchor="middle" 
-              dominant-baseline="middle"
-              transform="rotate(-45 ${imageWidth/2} ${imageHeight/2})">
-          TEST MODE
-        </text>
+        <rect width="100%" height="100%" fill="url(#watermark)" opacity="0.7"/>
       `;
       svgString = svgString.replace('</svg>', watermarkSvg + '</svg>');
     }
