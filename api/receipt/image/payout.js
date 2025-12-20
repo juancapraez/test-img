@@ -1,8 +1,3 @@
-/**
- * Receipt Payout API Route for Vercel
- * Uses the same Satori-based implementation as local server
- */
-
 const crypto = require("crypto");
 const Joi = require("joi");
 const { downloadImageAsBase64 } = require("../../../utils/imageBase64");
@@ -13,13 +8,12 @@ const { convertSvgToJpg } = require("../../../services/svgToJpg");
 const { humanDate } = require("../../../utils/humanDate");
 const { formatNumber } = require("../../../utils/formatNumber");
 const { TRAZO_LOGO_BASE64 } = require("../../../utils/trazo-logo");
+const { isValidHost } = require("../../../utils/checkHost");
 
-// --- In-memory logo cache with 12-hour TTL ---
 const logoCache = new Map();
-const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
 
-// Cleanup expired entries every hour
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of logoCache.entries()) {
@@ -27,7 +21,7 @@ setInterval(() => {
       logoCache.delete(key);
     }
   }
-}, 60 * 60 * 1000); // 1 hour
+}, 60 * 60 * 1000);
 
 function getCachedLogo(logoUrl) {
   const cached = logoCache.get(logoUrl);
@@ -60,8 +54,6 @@ async function downloadAndCacheLogo(logoUrl) {
       logoDataUri = await downloadImageAsBase64(logoUrl, "image/png");
       setCachedLogo(logoUrl, logoDataUri);
     } catch (error) {
-      // If logo download fails, use a placeholder
-      console.error('Error downloading logo:', error);
       logoDataUri = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMwIiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgMTMwIDQ1IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMzAiIGhlaWdodD0iNDUiIGZpbGw9IiNGM0Y0RjYiLz48dGV4dCB4PSI2NSIgeT0iMjciIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TE9HTzwvdGV4dD48L3N2Zz4=';
     }
   }
@@ -82,7 +74,6 @@ function splitTextInTwoLines(text, maxLength = 35) {
     firstLine = text.slice(0, breakpoint).trim();
     secondLine = text.slice(breakpoint + 1).trim();
   }
-  // If second line is still too long, truncate it and add "..."
   if (secondLine.length > maxLength) {
     secondLine = secondLine.slice(0, maxLength - 3).trim() + "...";
   }
@@ -197,6 +188,9 @@ module.exports = async (req, res) => {
     const imageHeight = resolution === "2x" ? baseHeight * 2 : baseHeight;
     const imageWidth = resolution === "2x" ? baseWidth * 2 : baseWidth;
 
+    // --- Check if request is from valid host ---
+    const isProductionHost = isValidHost(req);
+
     // --- Create receipt template using Satori ---
     const template = createReceiptTemplate({
       logoDataUri,
@@ -232,7 +226,28 @@ module.exports = async (req, res) => {
     });
 
     // --- Generate SVG and convert to JPG ---
-    const svgString = await renderSvg(template, { width: imageWidth, height: imageHeight });
+    let svgString = await renderSvg(template, { width: imageWidth, height: imageHeight });
+    
+    // Add watermark if not in production
+    if (!isProductionHost) {
+      const watermarkSvg = `
+        <text x="50%" y="50%" 
+              font-family="Red Hat Display, Arial, sans-serif" 
+              font-size="48" 
+              font-weight="700" 
+              fill="rgba(255, 0, 0, 0.3)" 
+              text-anchor="middle" 
+              dominant-baseline="middle"
+              transform="rotate(-45 ${imageWidth/2} ${imageHeight/2})"
+              style="user-select: none;">
+          IMAGEN DE PRUEBA
+          <tspan x="30%" dy="1.2em">NO VÁLIDO COMO COMPROBANTE</tspan>
+          <tspan x="70%" dy="1.2em">DEVELOPER MODE</tspan>
+        </text>
+      `;
+      svgString = svgString.replace('</svg>', watermarkSvg + '</svg>');
+    }
+    
     const imageBuffer = await convertSvgToJpg(svgString, { width: imageWidth, height: imageHeight });
 
     // --- Subir a S3 ---

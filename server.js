@@ -5,11 +5,11 @@
 
 require('dotenv').config();
 const http = require('http');
-const receiptHandler = require('./api/generate-receipt');
-const qrHandler = require('./routes/qrCodes');
-const receiptsHandler = require('./routes/receipts/images');
+const qrHandler = require('./api/qr/payment');
+const paymentHandler = require('./api/receipt/image/payment');
+const payoutHandler = require('./api/receipt/image/payout');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3015;
 
 const server = http.createServer(async (req, res) => {
   // Parse URL and query params
@@ -19,17 +19,28 @@ const server = http.createServer(async (req, res) => {
   req.query = Object.fromEntries(url.searchParams);
   
   // Route handling
-  if (url.pathname.startsWith('/api/generate-receipt')) {
-    await handleRequest(req, res, receiptHandler);
-  } else if (url.pathname.startsWith('/qr/payment')) {
+  if (url.pathname.startsWith('/qr/payment')) {
     await handleRequest(req, res, qrHandler);
-  } else if (url.pathname.startsWith('/receipt/image/')) {
-    await handleRequest(req, res, receiptsHandler);
-  } else if (url.pathname.startsWith('/api/receipts/')) {
-    await handleRequest(req, res, receiptsHandler);
+  } else if (url.pathname.startsWith('/receipt/image/payment')) {
+    await handleRequest(req, res, paymentHandler);
+  } else if (url.pathname.startsWith('/receipt/image/payout')) {
+    await handleRequest(req, res, payoutHandler);
+  } else if (url.pathname.startsWith('/api/receipts/payment')) {
+    await handleRequest(req, res, paymentHandler);
+  } else if (url.pathname.startsWith('/api/receipts/payout')) {
+    await handleRequest(req, res, payoutHandler);
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found. Available endpoints: POST /api/generate-receipt, POST /qr/payment, POST /receipt/image/payment, POST /receipt/image/payout, POST /api/receipts/payment, POST /api/receipts/payout' }));
+    res.end(JSON.stringify({ 
+      error: 'Not found',
+      available_endpoints: [
+        'POST /qr/payment',
+        'POST /receipt/image/payment',
+        'POST /receipt/image/payout',
+        'POST /api/receipts/payment',
+        'POST /api/receipts/payout'
+      ]
+    }));
     return;
   }
 });
@@ -84,20 +95,4 @@ async function handleRequest(req, res, handler) {
 
 server.listen(PORT, () => {
   console.log(`🧾 Receipt Generator Server running at http://localhost:${PORT}`);
-  console.log(`\nEndpoints:`);
-  console.log(`  POST /api/generate-receipt          → Returns PNG image`);
-  console.log(`  POST /api/generate-receipt?response=base64  → Returns base64 JSON`);
-  console.log(`  POST /qr/payment                    → Returns QR JPG image`);
-  console.log(`  POST /receipt/image/payment         → Returns payment receipt JPG`);
-  console.log(`  POST /receipt/image/payout          → Returns payout receipt JPG`);
-  console.log(`  POST /api/receipts/payment           → Returns payment receipt JPG (Vercel)`);
-  console.log(`  POST /api/receipts/payout            → Returns payout receipt JPG (Vercel)`);
-  console.log(`\nExample test commands:`);
-  console.log(`  Receipt: curl -X POST http://localhost:${PORT}/api/generate-receipt \\`);
-  console.log(`    -H "Content-Type: application/json" \\`);
-  console.log(`    -d @example-request.json \\`);
-  console.log(`    --output receipt.png`);
-  console.log(`  QR: curl -X POST http://localhost:${PORT}/qr/payment \\`);
-  console.log(`    -H "Content-Type: application/json" \\`);
-  console.log(`    -d '{"external_reference":"TEST-123","data":"https://example.com","business":{"logo":"https://via.placeholder.com/130x45/2563eb/ffffff?text=LOGO","main_color_brand":"#2563eb","secondary_color_brand":"#f3f4f6"}}'`);
 });
