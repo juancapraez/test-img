@@ -5,7 +5,7 @@ function hasValidApiKey(req) {
     return false;
   }
   
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  const token = authHeader.substring(7);
   const validApiKey = process.env.RECEIPT_API_KEY;
   
   return token === validApiKey;
