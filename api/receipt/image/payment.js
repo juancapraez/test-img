@@ -222,7 +222,7 @@ module.exports = async (req, res) => {
     if (!isProductionHost) {
       const watermarkSvg = `
         <text x="50%" y="50%" 
-              font-family="Red Hat Display, Arial, sans-serif" 
+              font-family="sans-serif" 
               font-size="48" 
               font-weight="700" 
               fill="rgba(255, 0, 0, 0.3)" 
