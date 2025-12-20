@@ -8,7 +8,7 @@ const { convertSvgToJpg } = require("../../../services/svgToJpg");
 const { humanDate } = require("../../../utils/humanDate");
 const { formatNumber } = require("../../../utils/formatNumber");
 const { TRAZO_LOGO_BASE64 } = require("../../../utils/trazo-logo");
-const { isValidHost } = require("../../../utils/checkHost");
+const { hasValidApiKey } = require("../../../utils/auth");
 
 const logoCache = new Map();
 const CACHE_TTL = 12 * 60 * 60 * 1000;
@@ -188,8 +188,8 @@ module.exports = async (req, res) => {
     const imageHeight = resolution === "2x" ? baseHeight * 2 : baseHeight;
     const imageWidth = resolution === "2x" ? baseWidth * 2 : baseWidth;
 
-    // --- Check if request is from valid host ---
-    const isProductionHost = isValidHost(req);
+    // --- Check if request has valid API key ---
+    const hasValidKey = hasValidApiKey(req);
 
     // --- Create receipt template using Satori ---
     const template = createReceiptTemplate({
@@ -228,8 +228,8 @@ module.exports = async (req, res) => {
     // --- Generate SVG and convert to JPG ---
     let svgString = await renderSvg(template, { width: imageWidth, height: imageHeight });
     
-    // Add watermark if not in production
-    if (!isProductionHost) {
+    // Add watermark if no valid API key
+    if (!hasValidKey) {
       const watermarkSvg = `
         <defs>
           <pattern id="watermark" patternUnits="userSpaceOnUse" width="100" height="100" patternTransform="rotate(-45)">
