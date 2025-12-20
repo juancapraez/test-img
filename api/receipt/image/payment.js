@@ -221,18 +221,22 @@ module.exports = async (req, res) => {
     // Add watermark if not in production
     if (!isProductionHost) {
       const watermarkSvg = `
+        <defs>
+          <pattern id="watermark" patternUnits="userSpaceOnUse" width="100" height="100" patternTransform="rotate(-45)">
+            <line x1="0" y1="0" x2="100" y2="100" stroke="rgba(255, 0, 0, 0.2)" stroke-width="20"/>
+            <text x="50" y="50" font-family="sans-serif" font-size="16" fill="rgba(255, 0, 0, 0.3)" text-anchor="middle">TEST</text>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#watermark)" opacity="0.5"/>
         <text x="50%" y="50%" 
               font-family="sans-serif" 
-              font-size="48" 
+              font-size="36" 
               font-weight="700" 
-              fill="rgba(255, 0, 0, 0.3)" 
+              fill="rgba(255, 0, 0, 0.4)" 
               text-anchor="middle" 
               dominant-baseline="middle"
-              transform="rotate(-45 ${imageWidth/2} ${imageHeight/2})"
-              style="user-select: none;">
-          IMAGEN DE PRUEBA
-          <tspan x="30%" dy="1.2em">NO VÁLIDO COMO COMPROBANTE</tspan>
-          <tspan x="70%" dy="1.2em">DEVELOPER MODE</tspan>
+              transform="rotate(-45 ${imageWidth/2} ${imageHeight/2})">
+          TEST MODE
         </text>
       `;
       svgString = svgString.replace('</svg>', watermarkSvg + '</svg>');
