@@ -19,6 +19,7 @@ const s3 = new AWS.S3({
 async function uploadFileToS3({ path, filename, type, buffer }) {
   const bucketName = S3_BUCKET_NAME;
   const key = `${path}/${filename}`;
+  
   const params = {
     Bucket: bucketName,
     Key: key,

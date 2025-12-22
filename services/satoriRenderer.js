@@ -12,7 +12,10 @@ let fontData = null;
 let fontBoldData = null;
 
 async function loadFonts() {
-  if (fontData && fontBoldData) return { fontData, fontBoldData };
+  if (fontData && fontBoldData) {
+    console.log('Using cached fonts');
+    return { fontData, fontBoldData };
+  }
 
   const fontPath = path.join(process.cwd(), 'fonts', 'RedHatDisplay-Regular.ttf');
   const fontBoldPath = path.join(process.cwd(), 'fonts', 'RedHatDisplay-Bold.ttf');

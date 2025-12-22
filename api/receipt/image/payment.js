@@ -1,6 +1,6 @@
 const crypto = require("crypto");
 const Joi = require("joi");
-const { downloadImageAsBase64 } = require("../../../utils/imageBase64");
+const { downloadAndCacheLogo } = require("../../../utils/logoCache");
 const { uploadFileToS3 } = require("../../../services/uploadS3");
 const { createReceiptTemplate } = require("../../../utils/receipt-template");
 const { renderSvg } = require("../../../services/satoriRenderer");
@@ -10,56 +10,6 @@ const { formatNumber } = require("../../../utils/formatNumber");
 const { TRAZO_LOGO_BASE64 } = require("../../../utils/trazo-logo");
 const { hasValidApiKey } = require("../../../utils/auth");
 
-const logoCache = new Map();
-const CACHE_TTL = 12 * 60 * 60 * 1000;
-const MAX_CACHE_SIZE = 1000;
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of logoCache.entries()) {
-    if (now - value.timestamp > CACHE_TTL) {
-      logoCache.delete(key);
-    }
-  }
-}, 60 * 60 * 1000);
-
-function getCachedLogo(logoUrl) {
-  const cached = logoCache.get(logoUrl);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    // Move to end (LRU)
-    logoCache.delete(logoUrl);
-    logoCache.set(logoUrl, cached);
-    return cached.dataUri;
-  }
-  return null;
-}
-
-function setCachedLogo(logoUrl, dataUri) {
-  // If cache is full, remove oldest entry
-  if (logoCache.size >= MAX_CACHE_SIZE) {
-    const firstKey = logoCache.keys().next().value;
-    logoCache.delete(firstKey);
-  }
-  logoCache.set(logoUrl, {
-    dataUri,
-    timestamp: Date.now()
-  });
-}
-
-async function downloadAndCacheLogo(logoUrl) {
-  let logoDataUri = getCachedLogo(logoUrl);
-  
-  if (!logoDataUri) {
-    try {
-      logoDataUri = await downloadImageAsBase64(logoUrl, "image/png");
-      setCachedLogo(logoUrl, logoDataUri);
-    } catch (error) {
-      logoDataUri = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTMwIiBoZWlnaHQ9IjQ1IiB2aWV3Qm94PSIwIDAgMTMwIDQ1IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMzAiIGhlaWdodD0iNDUiIGZpbGw9IiNGM0Y0RjYiLz48dGV4dCB4PSI2NSIgeT0iMjciIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzlDQTNBRiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TE9HTzwvdGV4dD48L3N2Zz4=';
-    }
-  }
-  
-  return logoDataUri;
-}
 
 function splitTextInTwoLines(text, maxLength = 35) {
   if (!text) return ["", ""];
@@ -156,7 +106,7 @@ module.exports = async (req, res) => {
     const [descriptionLine1, descriptionLine2] = splitTextInTwoLines(description_fixed, 30);
     const [clientLine1, clientLine2] = splitTextInTwoLines(client_fixed, 30);
 
-    // Download logos with caching
+    // --- Download logos with caching ---
     const logoDataUri = await downloadAndCacheLogo(logo);
     const techLogoDataUri = TRAZO_LOGO_BASE64; // Use cached base64 instead of downloading
 
@@ -234,7 +184,7 @@ module.exports = async (req, res) => {
     
     const imageBuffer = await convertSvgToJpg(svgString, { width: imageWidth, height: imageHeight });
 
-    // --- Subir a S3 ---
+    // --- Upload to S3 ---
     const filename = `${crypto.randomUUID()}-${Date.now()}.jpg`;
     const { url } = await uploadFileToS3({
       path: "payments/receipts",

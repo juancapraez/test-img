@@ -96,8 +96,11 @@ module.exports = async (req, res) => {
   const { main_color_brand, secondary_color_brand, logo } = business;
 
   try {
-    const qrDataUri = await generateQr(data);
-    const logoDataUri = await downloadAndCacheLogo(logo);
+    // --- Ejecutar QR generation y logo download en paralelo ---
+    const [qrDataUri, logoDataUri] = await Promise.all([
+      generateQr(data),
+      downloadAndCacheLogo(logo)
+    ]);
 
     // --- Estructura del QR usando Satori ---
     const template = createQrTemplate({
@@ -116,14 +119,16 @@ module.exports = async (req, res) => {
     const svgString = await renderSvg(template, { height: imageHeight });
     const jpgBuffer = await convertSvgToJpg(svgString, { height: imageHeight });
 
-    // --- Subir a S3 ---
+    // --- Preparar upload a S3 en paralelo ---
     const filename = `${crypto.randomUUID()}-${Date.now()}.jpg`;
-    const uploadResult = await uploadFileToS3({
+    const uploadPromise = uploadFileToS3({
       path: 'qr-codes',
       filename,
       type: 'image/jpeg',
       buffer: jpgBuffer,
     });
+    
+    const uploadResult = await uploadPromise;
 
     // --- Responder con la URL de la imagen ---
     res.status(200).json({

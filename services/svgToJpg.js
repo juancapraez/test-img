@@ -10,9 +10,9 @@ async function convertSvgToJpg(svgString, options = {}) {
     width: 700,
     height: 760, // Default height
     format: 'jpeg',
-    quality: 95,
+    quality: 80, // Reducido de 95 para menor tamaño
     background: { r: 255, g: 255, b: 255, alpha: 1 }, // White background
-    density: 300, // Higher DPI for better quality
+    density: 200, // Reducido de 300 para menor tamaño
   };
 
   const convertOptions = { ...defaultOptions, ...options };
