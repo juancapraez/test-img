@@ -14,6 +14,16 @@ const payoutDocumentHandler = require('./api/receipt/documents/payout');
 const PORT = process.env.PORT || 3015;
 
 const server = http.createServer(async (req, res) => {
+  // Handle OPTIONS requests for CORS
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+  
   // Parse URL and query params
   const url = new URL(req.url, `http://localhost:${PORT}`);
   
@@ -40,6 +50,7 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ 
       error: 'Not found',
       available_endpoints: [
+        'OPTIONS /api/*',
         'POST /qr/payment',
         'POST /receipt/image/payment',
         'POST /receipt/image/payout',
