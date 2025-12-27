@@ -8,8 +8,8 @@ const http = require('http');
 const qrHandler = require('./api/qr/payment');
 const paymentHandler = require('./api/receipt/image/payment');
 const payoutHandler = require('./api/receipt/image/payout');
-const paymentDocumentHandler = require('./api/receipt/documents/payment');
-const payoutDocumentHandler = require('./api/receipt/documents/payout');
+const paymentDocumentHandler = require('./api/receipt/docs/payment');
+const payoutDocumentHandler = require('./api/receipt/docs/payout');
 
 const PORT = process.env.PORT || 3015;
 

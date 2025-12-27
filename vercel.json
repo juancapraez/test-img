@@ -32,19 +32,19 @@
     },
     {
       "source": "/api/receipt/document/payment",
-      "destination": "/api/receipt/document/payment.js"
+      "destination": "/api/receipt/docs/payment.js"
     },
     {
       "source": "/api/receipt/document/payment(.*)",
-      "destination": "/api/receipt/document/payment.js"
+      "destination": "/api/receipt/docs/payment.js"
     },
     {
       "source": "/api/receipt/document/payout",
-      "destination": "/api/receipt/document/payout.js"
+      "destination": "/api/receipt/docs/payout.js"
     },
     {
       "source": "/api/receipt/document/payout(.*)",
-      "destination": "/api/receipt/document/payout.js"
+      "destination": "/api/receipt/docs/payout.js"
     },
     {
       "source": "/api/receipts/payment",
