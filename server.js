@@ -17,8 +17,8 @@ const server = http.createServer(async (req, res) => {
   // Handle OPTIONS requests for CORS
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.writeHead(200);
     res.end();
     return;
@@ -31,15 +31,15 @@ const server = http.createServer(async (req, res) => {
   req.query = Object.fromEntries(url.searchParams);
   
   // Route handling
-  if (url.pathname.startsWith('/qr/payment')) {
+  if (url.pathname.startsWith('/api/qr/payment')) {
     await handleRequest(req, res, qrHandler);
-  } else if (url.pathname.startsWith('/receipt/image/payment')) {
+  } else if (url.pathname.startsWith('/api/receipt/image/payment')) {
     await handleRequest(req, res, paymentHandler);
-  } else if (url.pathname.startsWith('/receipt/image/payout')) {
+  } else if (url.pathname.startsWith('/api/receipt/image/payout')) {
     await handleRequest(req, res, payoutHandler);
-  } else if (url.pathname.startsWith('/receipt/document/payment')) {
+  } else if (url.pathname.startsWith('/api/receipt/document/payment')) {
     await handleRequest(req, res, paymentDocumentHandler);
-  } else if (url.pathname.startsWith('/receipt/document/payout')) {
+  } else if (url.pathname.startsWith('/api/receipt/document/payout')) {
     await handleRequest(req, res, payoutDocumentHandler);
   } else if (url.pathname.startsWith('/api/receipts/payment')) {
     await handleRequest(req, res, paymentHandler);
@@ -51,11 +51,11 @@ const server = http.createServer(async (req, res) => {
       error: 'Not found',
       available_endpoints: [
         'OPTIONS /api/*',
-        'POST /qr/payment',
-        'POST /receipt/image/payment',
-        'POST /receipt/image/payout',
-        'POST /receipt/document/payment',
-        'POST /receipt/document/payout',
+        'POST /api/qr/payment',
+        'POST /api/receipt/image/payment',
+        'POST /api/receipt/image/payout',
+        'POST /api/receipt/document/payment',
+        'POST /api/receipt/document/payout',
         'POST /api/receipts/payment',
         'POST /api/receipts/payout'
       ]

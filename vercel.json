@@ -5,6 +5,36 @@
       "maxDuration": 10
     }
   },
+  "rewrites": [
+    {
+      "source": "/api/qr/payment",
+      "destination": "/api/qr/payment.js"
+    },
+    {
+      "source": "/api/receipt/image/payment",
+      "destination": "/api/receipt/image/payment.js"
+    },
+    {
+      "source": "/api/receipt/image/payout",
+      "destination": "/api/receipt/image/payout.js"
+    },
+    {
+      "source": "/api/receipt/document/payment",
+      "destination": "/api/receipt/document/payment.js"
+    },
+    {
+      "source": "/api/receipt/document/payout",
+      "destination": "/api/receipt/document/payout.js"
+    },
+    {
+      "source": "/api/receipts/payment",
+      "destination": "/api/receipt/image/payment.js"
+    },
+    {
+      "source": "/api/receipts/payout",
+      "destination": "/api/receipt/image/payout.js"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
@@ -15,45 +45,11 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
+          "value": "POST, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-API-Key"
-        }
-      ]
-    },
-    {
-      "source": "/receipt/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-API-Key"
-        }
-      ]
-    },
-    {
-      "source": "/qr/(.*)",
-      "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-API-Key"
+          "value": "Content-Type, Authorization"
         }
       ]
     }
