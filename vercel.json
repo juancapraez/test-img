@@ -11,7 +11,15 @@
       "destination": "/api/qr/payment.js"
     },
     {
+      "source": "/api/qr/payment(.*)",
+      "destination": "/api/qr/payment.js"
+    },
+    {
       "source": "/api/receipt/image/payment",
+      "destination": "/api/receipt/image/payment.js"
+    },
+    {
+      "source": "/api/receipt/image/payment(.*)",
       "destination": "/api/receipt/image/payment.js"
     },
     {
@@ -19,11 +27,23 @@
       "destination": "/api/receipt/image/payout.js"
     },
     {
+      "source": "/api/receipt/image/payout(.*)",
+      "destination": "/api/receipt/image/payout.js"
+    },
+    {
       "source": "/api/receipt/document/payment",
       "destination": "/api/receipt/document/payment.js"
     },
     {
+      "source": "/api/receipt/document/payment(.*)",
+      "destination": "/api/receipt/document/payment.js"
+    },
+    {
       "source": "/api/receipt/document/payout",
+      "destination": "/api/receipt/document/payout.js"
+    },
+    {
+      "source": "/api/receipt/document/payout(.*)",
       "destination": "/api/receipt/document/payout.js"
     },
     {
