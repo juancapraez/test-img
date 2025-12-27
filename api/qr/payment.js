@@ -133,11 +133,9 @@ module.exports = async (req, res) => {
     // --- Responder con la URL de la imagen ---
     res.status(200).json({
       status: "success",
-      data: {
-        url: uploadResult.url,
-        key: uploadResult.key,
-        external_reference,
-      },
+      message: "QR JPG creado exitosamente",
+      url: uploadResult.url,
+      extension: "jpg",
     });
   } catch (error) {
     console.error("Error generando QR:", error);

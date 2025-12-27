@@ -3,7 +3,7 @@
  * Uses comma for thousands and period for decimals
  */
 
-function formatNumber(number) {
+function formatNumber(number, currency) {
   if (typeof number !== 'number') {
     number = parseFloat(number);
   }
@@ -26,8 +26,9 @@ function formatNumber(number) {
   } else {
     formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   }
-  
-  return formatted;
+
+  const prefix = currency ? `${String(currency).toUpperCase()} ` : '';
+  return `${prefix} $ ${formatted}`;
 }
 
 module.exports = { formatNumber };

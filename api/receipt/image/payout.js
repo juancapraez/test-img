@@ -125,13 +125,13 @@ module.exports = async (req, res) => {
     // Divider 1: 1 + margin 16 = 17
     // Card 1: padding 16 * 1.5 * 2 = 48 + title 25 * 1.5 + margin 12 * 1.5 + 4 rows * (16 * 1.5 + gap 8 * 1.5) = 37.5 + 18 + 4 * (24 + 12) = 55.5 + 144 = 247.5
     // Divider 2: 1 + margin 16 = 17
-    // Card 2: padding 16 * 1.5 * 2 = 48 + title 25 * 1.5 + margin 12 * 1.5 + 3 rows * (16 * 1.5 + gap 8 * 1.5) = 37.5 + 18 + 3 * (24 + 12) = 55.5 + 108 = 211.5
-    // Card 3 (bank info): padding 16 * 1.5 * 2 = 48 + title 25 * 1.5 + margin 12 * 1.5 + 3 rows * (16 * 1.5 + gap 8 * 1.5) = 37.5 + 18 + 3 * (24 + 12) = 55.5 + 108 = 211.5
+    // Payment provider note: 1 line * 14 * 1.5 + padding = 21 + 24 = 45
     // Divider 3: 1 + margin 16 = 17
+    // Card 2: padding 16 * 1.5 * 2 = 48 + title 25 * 1.5 + margin 12 * 1.5 + 3 rows * (16 * 1.5 + gap 8 * 1.5) = 37.5 + 18 + 3 * (24 + 12) = 55.5 + 108 = 211.5
     // Footer with text and logo: 20 * 1.5 + margin 10 * 1.5 = 30 + 15 = 45
-    // Total base height = 75 + 60 + 135 + 55.5 + 45 + 17 + 247.5 + 17 + 211.5 + 211.5 + 17 + 45 = 1137
+    // Total base height = 75 + 60 + 135 + 55.5 + 45 + 17 + 247.5 + 17 + 45 + 17 + 211.5 + 45 = 970.5
     
-    const baseHeight = 1142 + 60 + (descriptionLine2 ? 30 : 0) + (clientLine2 ? 30 : 0);
+    const baseHeight = 991 + 60 + (descriptionLine2 ? 30 : 0) + (clientLine2 ? 30 : 0);
     const baseWidth = 720; // 480 * 1.5
     
     // Apply resolution multiplier

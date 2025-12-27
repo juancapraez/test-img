@@ -8,6 +8,8 @@ const http = require('http');
 const qrHandler = require('./api/qr/payment');
 const paymentHandler = require('./api/receipt/image/payment');
 const payoutHandler = require('./api/receipt/image/payout');
+const paymentDocumentHandler = require('./api/receipt/documents/payment');
+const payoutDocumentHandler = require('./api/receipt/documents/payout');
 
 const PORT = process.env.PORT || 3015;
 
@@ -25,6 +27,10 @@ const server = http.createServer(async (req, res) => {
     await handleRequest(req, res, paymentHandler);
   } else if (url.pathname.startsWith('/receipt/image/payout')) {
     await handleRequest(req, res, payoutHandler);
+  } else if (url.pathname.startsWith('/receipt/document/payment')) {
+    await handleRequest(req, res, paymentDocumentHandler);
+  } else if (url.pathname.startsWith('/receipt/document/payout')) {
+    await handleRequest(req, res, payoutDocumentHandler);
   } else if (url.pathname.startsWith('/api/receipts/payment')) {
     await handleRequest(req, res, paymentHandler);
   } else if (url.pathname.startsWith('/api/receipts/payout')) {
@@ -37,6 +43,8 @@ const server = http.createServer(async (req, res) => {
         'POST /qr/payment',
         'POST /receipt/image/payment',
         'POST /receipt/image/payout',
+        'POST /receipt/document/payment',
+        'POST /receipt/document/payout',
         'POST /api/receipts/payment',
         'POST /api/receipts/payout'
       ]
@@ -47,6 +55,18 @@ const server = http.createServer(async (req, res) => {
 
 // Helper function to handle requests
 async function handleRequest(req, res, handler) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 200;
+    res.end();
+    return;
+  }
+  
   // Parse JSON body for POST requests
   if (req.method === 'POST') {
     let body = '';

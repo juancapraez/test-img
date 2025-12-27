@@ -302,87 +302,184 @@ function createReceiptTemplate(data) {
                               ],
                             },
                           },
-                          {
-                            type: 'div',
-                            props: {
-                              style: {
-                                display: 'flex',
-                                justifyContent: 'space-between',
+                          ...(type === 'payout' ? [
+                            // Bank information for payouts
+                            {
+                              type: 'div',
+                              props: {
+                                style: {
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                },
+                                children: [
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#666',
+                                      },
+                                      children: 'Entidad bancaria:',
+                                    },
+                                  },
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#222',
+                                        fontWeight: 500,
+                                      },
+                                      children: bank_name || 'N/A',
+                                    },
+                                  },
+                                ],
                               },
-                              children: [
-                                {
-                                  type: 'span',
-                                  props: {
-                                    style: {
-                                      fontSize: 16 * 1.5,
-                                      color: '#666',
-                                    },
-                                    children: 'Método de pago:',
-                                  },
-                                },
-                                {
-                                  type: 'span',
-                                  props: {
-                                    style: {
-                                      fontSize: 16 * 1.5,
-                                      color: '#222',
-                                      fontWeight: 500,
-                                    },
-                                    children: payment_method || 'N/A',
-                                  },
-                                },
-                              ],
                             },
-                          },
-                          {
-                            type: 'div',
-                            props: {
-                              style: {
-                                display: 'flex',
-                                justifyContent: 'space-between',
+                            {
+                              type: 'div',
+                              props: {
+                                style: {
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                },
+                                children: [
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#666',
+                                      },
+                                      children: 'Cuenta:',
+                                    },
+                                  },
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#222',
+                                        fontWeight: 500,
+                                        textAlign: 'right',
+                                        maxWidth: 200 * 1.5,
+                                      },
+                                      children: `${bank_account_type || 'N/A'} - ${bank_account_number || 'N/A'}`,
+                                    },
+                                  },
+                                ],
                               },
-                              children: [
-                                {
-                                  type: 'span',
-                                  props: {
-                                    style: {
-                                      fontSize: 16 * 1.5,
-                                      color: '#666',
-                                    },
-                                    children: 'Medio de pago:',
-                                  },
-                                },
-                                {
-                                  type: 'span',
-                                  props: {
-                                    style: {
-                                      fontSize: 16 * 1.5,
-                                      color: '#222',
-                                      fontWeight: 500,
-                                    },
-                                    children: data.payment_provider_source || 'N/A',
-                                  },
-                                },
-                              ],
                             },
-                          },
+                          ] : [
+                            // Payment method for payments
+                            {
+                              type: 'div',
+                              props: {
+                                style: {
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                },
+                                children: [
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#666',
+                                      },
+                                      children: 'Método de pago:',
+                                    },
+                                  },
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#222',
+                                        fontWeight: 500,
+                                      },
+                                      children: payment_method || 'N/A',
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                            {
+                              type: 'div',
+                              props: {
+                                style: {
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                },
+                                children: [
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#666',
+                                      },
+                                      children: 'Medio de pago:',
+                                    },
+                                  },
+                                  {
+                                    type: 'span',
+                                    props: {
+                                      style: {
+                                        fontSize: 16 * 1.5,
+                                        color: '#222',
+                                        fontWeight: 500,
+                                      },
+                                      children: data.payment_provider_source || 'N/A',
+                                    },
+                                  },
+                                ],
+                              },
+                            },
+                          ]),
                         ],
                       },
                     },
                   ],
                 },
               },
-              // Divider 2
-              {
-                type: 'div',
-                props: {
-                  style: {
-                    height: 1,
-                    backgroundColor: '#e5e7eb',
-                    margin: '8px 0',
+              // Payment provider note for payouts
+              ...(type === 'payout' && data.payment_provider_source ? [
+                {
+                  type: 'div',
+                  props: {
+                    style: {
+                      display: 'flex',
+                      justifyContent: 'flex-start',
+                      alignItems: 'center',
+                      marginBottom: 8 * 1.5,
+                    },
+                    children: {
+                      type: 'span',
+                      props: {
+                        style: {
+                          fontSize: 14 * 1.5,
+                          color: main_color_brand || '#374550',
+                          fontWeight: 500,
+                          textAlign: 'left',
+                        },
+                        children: `Este pago aparecerá como ${data.payment_provider_source} en tus movimientos.`,
+                      },
+                    },
                   },
                 },
-              },
+                // Divider after payment provider note
+                {
+                  type: 'div',
+                  props: {
+                    style: {
+                      height: 1,
+                      backgroundColor: '#e5e7eb',
+                      margin: '8px 0',
+                    },
+                  },
+                },
+              ] : []),
               // Card 2: Customer Data
               {
                 type: 'div',
