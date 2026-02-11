@@ -11,6 +11,12 @@ const { TRAZO_LOGO_BASE64 } = require("../../../utils/trazo-logo");
 const { hasValidApiKey } = require("../../../utils/auth");
 
 
+function truncateText(text, maxLength = 30) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3).trim() + '...';
+}
+
 function splitTextInTwoLines(text, maxLength = 35) {
   if (!text) return ["", ""];
   if (text.length <= maxLength) return [text.trim(), ""];
@@ -111,11 +117,8 @@ module.exports = async (req, res) => {
 
     const description_fixed = description_reference_one;
 
-    const client_fixed =
-      client.length > 45 ? client.slice(0, 44) + "..." : client;
-
+    const client_fixed = truncateText(client, 30);
     const [descriptionLine1, descriptionLine2] = splitTextInTwoLines(description_fixed, 30);
-    const [clientLine1, clientLine2] = splitTextInTwoLines(client_fixed, 30);
 
     // --- Download logos with caching ---
     const logoDataUri = await downloadAndCacheLogo(logo);
@@ -135,7 +138,7 @@ module.exports = async (req, res) => {
     // Footer with text and logo: 20 * 1.5 + margin 10 * 1.5 = 30 + 15 = 45
     // Total base height = 75 + 60 + 135 + 55.5 + 45 + 17 + 247.5 + 17 + 211.5 + 17 + 45 = 925
     
-    const baseHeight = 988 + (descriptionLine2 ? 30 : 0) + (clientLine2 ? 30 : 0);
+    const baseHeight = 988 + (descriptionLine2 ? 30 : 0);
     const baseWidth = 750; // 500 * 1.5
     
     // Apply resolution multiplier
@@ -171,8 +174,7 @@ module.exports = async (req, res) => {
       formatted_amount,
       descriptionLine1,
       descriptionLine2,
-      clientLine1,
-      clientLine2,
+      clientLine1: client_fixed,
       type: 'payment',
     });
 

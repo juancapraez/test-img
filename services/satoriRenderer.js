@@ -31,8 +31,8 @@ function convertToSatoriElement(node) {
 
 async function renderSvg(template, options = {}) {
   const defaultOptions = {
-    width: 750, // 500 * 1.5 for payment receipts
-    height: 1425, // 950 * 1.5 to match new template height
+    width: 700, // Match QR template width
+    height: 760, // Default height matching QR template
     fontFamily: 'Red Hat Display',
   };
 
