@@ -31,4 +31,29 @@ function formatNumber(number, currency) {
   return `${prefix} $ ${formatted}`;
 }
 
-module.exports = { formatNumber };
+/**
+ * Format number without decimals
+ * Uses comma for thousands separator
+ */
+function formatNumberNoDecimals(number) {
+  if (typeof number !== 'number') {
+    number = parseFloat(number);
+  }
+  
+  if (isNaN(number)) {
+    return '0';
+  }
+  
+  // Format without decimals
+  let formatted = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(number);
+  
+  // Add thousands separator
+  formatted = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  
+  return formatted;
+}
+
+module.exports = { formatNumber, formatNumberNoDecimals };

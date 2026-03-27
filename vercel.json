@@ -53,6 +53,26 @@
     {
       "source": "/api/receipts/payout",
       "destination": "/api/receipt/image/payout.js"
+    },
+    {
+      "source": "/api/voucher/document/payment",
+      "destination": "/api/voucher/docs/payment.js"
+    },
+    {
+      "source": "/api/reports/document/operation-details",
+      "destination": "/api/reports/docs/operation-details.js"
+    },
+    {
+      "source": "/api/reports/document/operation-details(.*)",
+      "destination": "/api/reports/docs/operation-details.js"
+    },
+    {
+      "source": "/api/reports/image/operation-summary",
+      "destination": "/api/reports/image/operation-summary.js"
+    },
+    {
+      "source": "/api/reports/image/operation-summary(.*)",
+      "destination": "/api/reports/image/operation-summary.js"
     }
   ],
   "headers": [

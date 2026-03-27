@@ -10,6 +10,9 @@ const paymentHandler = require('./api/receipt/image/payment');
 const payoutHandler = require('./api/receipt/image/payout');
 const paymentDocumentHandler = require('./api/receipt/docs/payment');
 const payoutDocumentHandler = require('./api/receipt/docs/payout');
+const voucherPaymentHandler = require('./api/voucher/docs/payment');
+const reportsDocumentHandler = require('./api/reports/docs/operation-details');
+const reportsImageHandler = require('./api/reports/image/operation-summary');
 
 const PORT = process.env.PORT || 3015;
 
@@ -45,6 +48,12 @@ const server = http.createServer(async (req, res) => {
     await handleRequest(req, res, paymentHandler);
   } else if (url.pathname.startsWith('/api/receipts/payout')) {
     await handleRequest(req, res, payoutHandler);
+  } else if (url.pathname.startsWith('/api/voucher/document/payment')) {
+    await handleRequest(req, res, voucherPaymentHandler);
+  } else if (url.pathname.startsWith('/api/reports/document/operation-details')) {
+    await handleRequest(req, res, reportsDocumentHandler);
+  } else if (url.pathname.startsWith('/api/reports/image/operation-summary')) {
+    await handleRequest(req, res, reportsImageHandler);
   } else {
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ 
@@ -57,7 +66,10 @@ const server = http.createServer(async (req, res) => {
         'POST /api/receipt/document/payment',
         'POST /api/receipt/document/payout',
         'POST /api/receipts/payment',
-        'POST /api/receipts/payout'
+        'POST /api/receipts/payout',
+        'POST /api/voucher/document/payment',
+        'POST /api/reports/document/operation-details',
+        'POST /api/reports/image/operation-summary'
       ]
     }));
     return;
