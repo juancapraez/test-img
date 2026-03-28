@@ -11,6 +11,7 @@ const { renderSvg } = require("../../../services/satoriRenderer");
 const { convertSvgToJpg } = require("../../../services/svgToJpg");
 const { humanDate } = require("../../../utils/humanDate");
 const { formatNumberNoDecimals } = require("../../../utils/formatNumber");
+const { hasValidApiKey } = require("../../../utils/auth");
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -120,6 +121,7 @@ module.exports = async (req, res) => {
 
     const currency = "COP";
     const formatted_date = humanDate();
+    const hasValidKey = hasValidApiKey(req);
 
     const {
       success,
@@ -677,7 +679,21 @@ module.exports = async (req, res) => {
     // Renderizar SVG
     const template = createReportTemplate();
     const imageHeight = 660;
-    const svgString = await renderSvg(template, { height: imageHeight });
+    let svgString = await renderSvg(template, { height: imageHeight });
+    
+    // Add watermark if no valid API key
+    if (!hasValidKey) {
+      const watermarkSvg = `
+        <defs>
+          <pattern id="watermark" patternUnits="userSpaceOnUse" width="100" height="100" patternTransform="rotate(-45)">
+            <line x1="0" y1="0" x2="100" y2="100" stroke="rgba(255, 0, 0, 0.2)" stroke-width="20"/>
+            <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(255, 0, 0, 0.15)" stroke-width="10"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#watermark)" opacity="0.7"/>
+      `;
+      svgString = svgString.replace('</svg>', watermarkSvg + '</svg>');
+    }
     
     // Convertir a JPG
     const jpgBuffer = await convertSvgToJpg(svgString, { height: imageHeight });

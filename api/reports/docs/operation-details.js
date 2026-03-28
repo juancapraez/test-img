@@ -11,6 +11,7 @@ const { createPdfBuffer } = require("../../../utils/createPdfBuffer");
 const { getPrinter } = require("../../../utils/pdfFonts");
 const { humanDate } = require("../../../utils/humanDate");
 const { formatNumber, formatNumberNoDecimals, formatNumberNoCurrency } = require("../../../utils/formatNumber");
+const { hasValidApiKey } = require("../../../utils/auth");
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -128,6 +129,7 @@ module.exports = async (req, res) => {
 
     const currency = "COP";
     const formatted_date = humanDate();
+    const hasKey = hasValidApiKey(req);
 
     const {
       success,
@@ -340,6 +342,42 @@ module.exports = async (req, res) => {
 
     const docDefinition = {
       pageMargins: [10, 10, 10, 30],
+      watermark: hasKey
+        ? null
+        : {
+            text: "Prueba Prueba",
+            color: "#ff0000",
+            opacity: 0.06,
+            bold: true,
+            angle: 315,
+          },
+      background: () => {
+        const layers = [];
+
+        if (!hasKey) {
+          const wmStyle = {
+            color: "#ff0000",
+            opacity: 0.08,
+            bold: true,
+            fontSize: 45,
+            angle: 315,
+          };
+          layers.push(
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 0 } },
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 75 } },
+            { text: "Versión de prueba.", ...wmStyle, absolutePosition: { x: 60, y: 150 } },
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 225 } },
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 300 } },
+            { text: "Documento no válido como comprobante", ...wmStyle, absolutePosition: { x: 60, y: 375 } },
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 500 } },
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 575 } },
+            { text: "{ Developer mode }", ...wmStyle, absolutePosition: { x: 60, y: 650 } },
+            { text: "/   /   /   /   /   /   /   /   /   /   /   /", ...wmStyle, absolutePosition: { x: 0, y: 725 } }
+          );
+        }
+
+        return layers;
+      },
       content: [
         {
           margin: [0, 0, 0, 10],
