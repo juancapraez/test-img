@@ -32,17 +32,66 @@ module.exports = async (req, res) => {
       contact_id: Joi.string().required(),
       start_date: Joi.string().required(),
       end_date: Joi.string().required(),
-      manual_date: Joi.string().allow(null, ""),
       logo: Joi.string().required(),
       main_color_brand: Joi.string().required(),
       secondary_color_brand: Joi.string().required(),
+      first_name: Joi.string().optional(),
+      last_name: Joi.string().optional(),
+      id_type: Joi.string().optional(),
+      id_number: Joi.string().optional(),
+      user_email: Joi.string().allow(null, ""),
+      user_phone: Joi.string().allow(null, ""),
+      manual_date: Joi.string().allow(null, ""),
       transactions: Joi.object({
-        success: Joi.array().items(Joi.object()).default([]),
-        review: Joi.array().items(Joi.object()).default([]),
-        return: Joi.array().items(Joi.object()).default([]),
-        credit: Joi.array().items(Joi.object()).default([]),
-        external: Joi.array().items(Joi.object()).default([]),
-        pending: Joi.array().items(Joi.object()).default([]),
+        success: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        review: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        return: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+          return_reason: Joi.string().allow(null, ""),
+        })).required(),
+        credit: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        external: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        pending: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
       }).required(),
     });
 
@@ -58,10 +107,14 @@ module.exports = async (req, res) => {
       contact_id,
       start_date,
       end_date,
-      manual_date,
       logo,
       main_color_brand,
       secondary_color_brand,
+      first_name,
+      last_name,
+      id_type,
+      id_number,
+      manual_date,
       transactions,
     } = value;
 
@@ -101,6 +154,14 @@ module.exports = async (req, res) => {
       pending && pending.length > 0 ? pending : [{ amount: 0 }]
     ).reduce((acc, curr) => acc + curr.amount, 0);
 
+    // Calcular valores de las tarjetas (lógica original de summary)
+    const expected_amount = total_success + total_review + total_credit + total_external;
+    const expected_count = success.length + review.length + credit.length + external.length;
+    const processed_amount = total_success + total_return;
+    const missing_amount = expected_amount - processed_amount;
+    const missing_count = expected_count - (success.length + return_data.length);
+    const missing_percentage = expected_amount > 0 ? missing_amount / expected_amount : 0;
+
     const techLogoData =
       "https://trazo-co.s3.amazonaws.com/logos/Logo+Trazo+Gris+100px.png";
     const techLogoDataUri = await downloadImageAsBase64(techLogoData);
@@ -112,37 +173,16 @@ module.exports = async (req, res) => {
         "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
       ];
 
-      const monthsShort = [
-        "ene", "feb", "mar", "abr", "may", "jun",
-        "jul", "ago", "sep", "oct", "nov", "dic",
-      ];
-
       const [year, month, day] = dateString.split("-");
-      return {
-        day: parseInt(day, 10),
-        monthFull: monthsFull[parseInt(month, 10) - 1],
-        monthShort: monthsShort[parseInt(month, 10) - 1],
-        year,
-      };
+      const formattedDate = `${parseInt(day, 10)} de ${monthsFull[parseInt(month, 10) - 1]} de ${year}`;
+      return formattedDate;
     }
 
     function formatDateRange(start_date, end_date) {
       if (start_date === end_date) {
-        const { day, monthFull, year } = formatDateToSpanish(start_date);
-        return `${day} de ${monthFull} de ${year}`;
-      }
-
-      const start = formatDateToSpanish(start_date);
-      const end = formatDateToSpanish(end_date);
-
-      if (start.year === end.year) {
-        if (start.monthFull === end.monthFull) {
-          return `Del ${start.day} al ${end.day} de ${start.monthFull} de ${start.year}`;
-        } else {
-          return `Del ${start.day} de ${start.monthShort} al ${end.day} de ${end.monthShort} de ${start.year}`;
-        }
+        return formatDateToSpanish(start_date);
       } else {
-        return `Del ${start.day} de ${start.monthShort} de ${start.year} al ${end.day} de ${end.monthShort} de ${end.year}`;
+        return `Del ${formatDateToSpanish(start_date)} al ${formatDateToSpanish(end_date)}`;
       }
     }
 
@@ -153,11 +193,9 @@ module.exports = async (req, res) => {
         props: {
           style: {
             display: 'flex',
-            flexDirection: 'column',
-            width: '800px',
-            height: '880px',
+            width: '720px',
+            height: '660px',
             backgroundColor: secondary_color_brand || '#DFEEEB',
-            position: 'relative',
             fontFamily: 'Red Hat Display',
           },
           children: [
@@ -168,14 +206,13 @@ module.exports = async (req, res) => {
                 style: {
                   display: 'flex',
                   flexDirection: 'column',
-                  position: 'absolute',
-                  left: '40px',
-                  top: '60px',
-                  width: '710px',
-                  height: '740px',
+                  position: 'relative',
+                  margin: '30px',
                   backgroundColor: '#FFFFFF',
                   borderRadius: '10px',
-                  padding: '20px',
+                  padding: '30px',
+                  height: '600px',
+                  width: '640px',
                 },
                 children: [
                   // Header
@@ -185,7 +222,7 @@ module.exports = async (req, res) => {
                       style: {
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center',
+                        alignItems: 'flex-start',
                         borderBottom: '1px solid #D9D9D9',
                         paddingBottom: '20px',
                         marginBottom: '8px',
@@ -197,6 +234,7 @@ module.exports = async (req, res) => {
                             style: {
                               display: 'flex',
                               flexDirection: 'column',
+                              justifyContent: 'space-between',
                             },
                             children: [
                               {
@@ -206,6 +244,7 @@ module.exports = async (req, res) => {
                                     fontSize: '40px',
                                     color: main_color_brand || '#007867',
                                     marginBottom: '6px',
+                                    width: '100%',
                                   },
                                   children: 'Resumen de ruta',
                                 },
@@ -228,8 +267,8 @@ module.exports = async (req, res) => {
                           props: {
                             src: logoDataUri,
                             style: {
-                              width: '130px',
-                              height: '80px',
+                              maxWidth: '120px',
+                              maxHeight: '60px',
                               objectFit: 'contain',
                             },
                           },
@@ -237,408 +276,347 @@ module.exports = async (req, res) => {
                       ],
                     },
                   },
-                  // Tarjetas de métricas
+                  // Tarjetas de métricas - Fila 1
                   {
                     type: 'div',
                     props: {
                       style: {
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: '30px',
-                        marginTop: '20px',
+                        justifyContent: 'space-between',
+                        margin: '20px 0 30px 0',
+                        maxWidth: '100%',
                       },
                       children: [
-                        // Fila 1
+                        // Tarjeta EXITOSOS
                         {
                           type: 'div',
                           props: {
                             style: {
                               display: 'flex',
-                              gap: '30px',
+                              flexDirection: 'column',
+                              width: '275px',
+                              marginRight: '30px',
+                              backgroundColor: '#EBFAF3',
+                              border: '1px solid #065E49',
+                              borderRadius: '10px',
+                              padding: '15px',
                             },
                             children: [
                               {
                                 type: 'div',
                                 props: {
                                   style: {
-                                    display: 'flex',
-                                    flex: 1,
-                                    backgroundColor: '#FFFFFF',
-                                    border: '1px solid #D9D9D9',
-                                    borderRadius: '10px',
-                                    padding: '15px',
+                                    fontSize: '12px',
+                                    color: '#065E49',
+                                    fontWeight: 'bold',
+                                    marginBottom: '5px',
                                   },
-                                  children: [
-                                    {
-                                      type: 'div',
-                                      props: {
-                                        style: {
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                        },
-                                        children: [
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '24px',
-                                                color: '#065E49',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: 'EXITOSOS',
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '36px',
-                                                color: 'black',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: `$${formatNumberNoDecimals(total_success)}`,
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '22px',
-                                                color: '#637381',
-                                              },
-                                              children: `${success.length} cobros`,
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    },
-                                  ],
+                                  children: 'EXITOSOS',
                                 },
                               },
                               {
                                 type: 'div',
                                 props: {
                                   style: {
-                                    display: 'flex',
-                                    flex: 1,
-                                    backgroundColor: '#FFFFFF',
-                                    border: '1px solid #D9D9D9',
-                                    borderRadius: '10px',
-                                    padding: '15px',
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#065E49',
+                                    marginBottom: '2px',
                                   },
-                                  children: [
-                                    {
-                                      type: 'div',
-                                      props: {
-                                        style: {
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                        },
-                                        children: [
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '24px',
-                                                color: '#B71D18',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: 'POR CONCILIAR',
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '36px',
-                                                color: 'black',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: `$${formatNumberNoDecimals(total_review)}`,
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '22px',
-                                                color: '#637381',
-                                              },
-                                              children: `${review.length} cobros`,
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    },
-                                  ],
+                                  children: `$${formatNumberNoDecimals(total_success)}`,
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#666666',
+                                  },
+                                  children: `${success.length} transacciones`,
                                 },
                               },
                             ],
                           },
                         },
-                        // Fila 2
+                        // Tarjeta POR CONCILIAR
                         {
                           type: 'div',
                           props: {
                             style: {
                               display: 'flex',
-                              gap: '30px',
+                              flexDirection: 'column',
+                              width: '275px',
+                              backgroundColor: '#FFF2F0',
+                              border: '1px solid #B71D18',
+                              borderRadius: '10px',
+                              padding: '15px',
                             },
                             children: [
                               {
                                 type: 'div',
                                 props: {
                                   style: {
-                                    display: 'flex',
-                                    flex: 1,
-                                    backgroundColor: '#FFFFFF',
-                                    border: '1px solid #D9D9D9',
-                                    borderRadius: '10px',
-                                    padding: '15px',
+                                    fontSize: '12px',
+                                    color: '#B71D18',
+                                    fontWeight: 'bold',
+                                    marginBottom: '5px',
                                   },
-                                  children: [
-                                    {
-                                      type: 'div',
-                                      props: {
-                                        style: {
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                        },
-                                        children: [
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '24px',
-                                                color: '#006C9C',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: 'CRÉDITO',
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '36px',
-                                                color: 'black',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: `$${formatNumberNoDecimals(total_credit)}`,
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '22px',
-                                                color: '#637381',
-                                              },
-                                              children: `${credit.length} cobros`,
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    },
-                                  ],
+                                  children: 'POR CONCILIAR',
                                 },
                               },
                               {
                                 type: 'div',
                                 props: {
                                   style: {
-                                    display: 'flex',
-                                    flex: 1,
-                                    backgroundColor: '#FFFFFF',
-                                    border: '1px solid #D9D9D9',
-                                    borderRadius: '10px',
-                                    padding: '15px',
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#B71D18',
+                                    marginBottom: '2px',
                                   },
-                                  children: [
-                                    {
-                                      type: 'div',
-                                      props: {
-                                        style: {
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                        },
-                                        children: [
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '24px',
-                                                color: '#4D5B68',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: 'PAGO EXTERNO',
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '36px',
-                                                color: 'black',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: `$${formatNumberNoDecimals(total_external)}`,
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '22px',
-                                                color: '#637381',
-                                              },
-                                              children: `${external.length} cobros`,
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    },
-                                  ],
+                                  children: `$${formatNumberNoDecimals(total_review)}`,
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#666666',
+                                  },
+                                  children: `${review.length} transacciones`,
                                 },
                               },
                             ],
                           },
                         },
-                        // Fila 3
+                      ],
+                    },
+                  },
+                  // Tarjetas de métricas - Fila 2
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '0 0 30px 0',
+                      },
+                      children: [
+                        // Tarjeta CRÉDITO
                         {
                           type: 'div',
                           props: {
                             style: {
                               display: 'flex',
-                              gap: '30px',
+                              flexDirection: 'column',
+                              width: '275px',
+                              marginRight: '30px',
+                              backgroundColor: '#E6F7FF',
+                              border: '1px solid #006C9C',
+                              borderRadius: '10px',
+                              padding: '15px',
                             },
                             children: [
                               {
                                 type: 'div',
                                 props: {
                                   style: {
-                                    display: 'flex',
-                                    flex: 1,
-                                    backgroundColor: '#FFFFFF',
-                                    border: '1px solid #D9D9D9',
-                                    borderRadius: '10px',
-                                    padding: '15px',
+                                    fontSize: '12px',
+                                    color: '#006C9C',
+                                    fontWeight: 'bold',
+                                    marginBottom: '5px',
                                   },
-                                  children: [
-                                    {
-                                      type: 'div',
-                                      props: {
-                                        style: {
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                        },
-                                        children: [
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '24px',
-                                                color: '#5119B7',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: 'DEVOLUCIONES',
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '36px',
-                                                color: 'black',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: `$${formatNumberNoDecimals(total_return)}`,
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '22px',
-                                                color: '#637381',
-                                              },
-                                              children: `${return_data.length} cobros`,
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    },
-                                  ],
+                                  children: 'CRÉDITO',
                                 },
                               },
                               {
                                 type: 'div',
                                 props: {
                                   style: {
-                                    display: 'flex',
-                                    flex: 1,
-                                    backgroundColor: '#FFFFFF',
-                                    border: '1px solid #D9D9D9',
-                                    borderRadius: '10px',
-                                    padding: '15px',
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#006C9C',
+                                    marginBottom: '2px',
                                   },
-                                  children: [
-                                    {
-                                      type: 'div',
-                                      props: {
-                                        style: {
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                        },
-                                        children: [
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '24px',
-                                                color: '#7A4100',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: 'SIN GESTIONAR',
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '36px',
-                                                color: 'black',
-                                                fontWeight: 'bold',
-                                                marginBottom: '4px',
-                                              },
-                                              children: `$${formatNumberNoDecimals(total_pending)}`,
-                                            },
-                                          },
-                                          {
-                                            type: 'div',
-                                            props: {
-                                              style: {
-                                                fontSize: '22px',
-                                                color: '#637381',
-                                              },
-                                              children: `${pending.length} cobros`,
-                                            },
-                                          },
-                                        ],
-                                      },
-                                    },
-                                  ],
+                                  children: `$${formatNumberNoDecimals(total_credit)}`,
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#666666',
+                                  },
+                                  children: `${credit.length} transacciones`,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                        // Tarjeta PAGO EXTERNO
+                        {
+                          type: 'div',
+                          props: {
+                            style: {
+                              display: 'flex',
+                              flexDirection: 'column',
+                              width: '275px',
+                              backgroundColor: '#F6F7F8',
+                              border: '1px solid #4D5B68',
+                              borderRadius: '10px',
+                              padding: '15px',
+                            },
+                            children: [
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#4D5B68',
+                                    fontWeight: 'bold',
+                                    marginBottom: '5px',
+                                  },
+                                  children: 'PAGO EXTERNO',
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#4D5B68',
+                                    marginBottom: '2px',
+                                  },
+                                  children: `$${formatNumberNoDecimals(total_external)}`,
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#666666',
+                                  },
+                                  children: `${external.length} transacciones`,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  // Tarjetas de métricas - Fila 3
+                  {
+                    type: 'div',
+                    props: {
+                      style: {
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        margin: '0 0 10px 0',
+                      },
+                      children: [
+                        // Tarjeta DEVOLUCIONES
+                        {
+                          type: 'div',
+                          props: {
+                            style: {
+                              display: 'flex',
+                              flexDirection: 'column',
+                              width: '275px',
+                              marginRight: '30px',
+                              backgroundColor: '#F9F0FF',
+                              border: '1px solid #5119B7',
+                              borderRadius: '10px',
+                              padding: '15px',
+                            },
+                            children: [
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#5119B7',
+                                    fontWeight: 'bold',
+                                    marginBottom: '5px',
+                                  },
+                                  children: 'DEVOLUCIONES',
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#5119B7',
+                                    marginBottom: '2px',
+                                  },
+                                  children: `$${formatNumberNoDecimals(total_return)}`,
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#666666',
+                                  },
+                                  children: `${return_data.length} transacciones`,
+                                },
+                              },
+                            ],
+                          },
+                        },
+                        // Tarjeta SIN GESTIONAR
+                        {
+                          type: 'div',
+                          props: {
+                            style: {
+                              display: 'flex',
+                              flexDirection: 'column',
+                              backgroundColor: '#FFF8EF',
+                              border: '1px solid #7A4100',
+                              width: '275px',
+                              borderRadius: '10px',
+                              padding: '15px',
+                            },
+                            children: [
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#7A4100',
+                                    fontWeight: 'bold',
+                                    marginBottom: '5px',
+                                  },
+                                  children: 'SIN GESTIONAR',
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#7A4100',
+                                    marginBottom: '2px',
+                                  },
+                                  children: `$${formatNumberNoDecimals(total_pending)}`,
+                                },
+                              },
+                              {
+                                type: 'div',
+                                props: {
+                                  style: {
+                                    fontSize: '12px',
+                                    color: '#666666',
+                                  },
+                                  children: `${pending.length} transacciones`,
                                 },
                               },
                             ],
@@ -655,21 +633,23 @@ module.exports = async (req, res) => {
               type: 'div',
               props: {
                 style: {
-                  position: 'absolute',
-                  bottom: '30px',
-                  left: '0',
-                  right: '0',
                   display: 'flex',
                   justifyContent: 'center',
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  gap: '10px',
+                  gap: '2px',
+                  position: 'absolute',
+                  bottom: '50px',
+                  left: '30px',
+                  right: '30px',
+                  width: 'auto',
                 },
                 children: [
                   {
                     type: 'div',
                     props: {
                       style: {
-                        fontSize: '16px',
+                        fontSize: '14px',
                         color: '#848688',
                       },
                       children: 'Con la tecnología de',
@@ -680,8 +660,8 @@ module.exports = async (req, res) => {
                     props: {
                       src: techLogoDataUri,
                       style: {
-                        width: '100px',
-                        height: '20px',
+                        maxWidth: '45px',
+                        maxHeight: '15px',
                         objectFit: 'contain',
                       },
                     },
@@ -694,33 +674,36 @@ module.exports = async (req, res) => {
       };
     };
 
-    // Generar SVG y convertir en imagen JPG
+    // Renderizar SVG
     const template = createReportTemplate();
-    const svgString = await renderSvg(template, { width: 800, height: 880 });
-    const imageBuffer = await convertSvgToJpg(svgString, { width: 800, height: 880 });
-
+    const imageHeight = 660;
+    const svgString = await renderSvg(template, { height: imageHeight });
+    
+    // Convertir a JPG
+    const jpgBuffer = await convertSvgToJpg(svgString, { height: imageHeight });
+    
+    // Subir a S3
     const filename = `${crypto.randomUUID()}-${Date.now()}.jpg`;
     const { url } = await uploadFileToS3({
       path: "reports",
       filename,
       type: "image/jpeg",
-      buffer: imageBuffer,
+      buffer: jpgBuffer,
     });
 
     res.status(200).json({
       status: "success",
-      message: "Reporte JPG creado exitosamente",
+      message: "Imagen generada exitosamente",
       url,
       extension: "jpg",
     });
-  } catch (err) {
-    console.log(err);
+  } catch (error) {
+    console.error("Error generating image report:", error);
     res.status(500).json({
       status: "error",
       code: 500,
-      message:
-        "Error interno generando imagen" +
-        (err.message ? ": " + err.message : ""),
+      message: "Error interno generando imagen" +
+        (error.message ? ": " + error.message : ""),
     });
   }
 };

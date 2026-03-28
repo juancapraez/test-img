@@ -10,7 +10,7 @@ const { uploadFileToS3 } = require("../../../services/uploadS3");
 const { createPdfBuffer } = require("../../../utils/createPdfBuffer");
 const { getPrinter } = require("../../../utils/pdfFonts");
 const { humanDate } = require("../../../utils/humanDate");
-const { formatNumber, formatNumberNoDecimals } = require("../../../utils/formatNumber");
+const { formatNumber, formatNumberNoDecimals, formatNumberNoCurrency } = require("../../../utils/formatNumber");
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -32,7 +32,6 @@ module.exports = async (req, res) => {
       contact_id: Joi.string().required(),
       start_date: Joi.string().required(),
       end_date: Joi.string().required(),
-      manual_date: Joi.string().allow(null, ""),
       logo: Joi.string().required(),
       main_color_brand: Joi.string().required(),
       secondary_color_brand: Joi.string().required(),
@@ -40,21 +39,67 @@ module.exports = async (req, res) => {
       last_name: Joi.string().required(),
       id_type: Joi.string().required(),
       id_number: Joi.string().required(),
+      user_email: Joi.string().allow(null, ""),
+      user_phone: Joi.string().allow(null, ""),
+      manual_date: Joi.string().allow(null, ""),
       transactions: Joi.object({
-        success: Joi.array().items(Joi.object()).default([]),
-        review: Joi.array().items(Joi.object()).default([]),
-        return: Joi.array().items(Joi.object()).default([]),
-        credit: Joi.array().items(Joi.object()).default([]),
-        external: Joi.array().items(Joi.object()).default([]),
-        pending: Joi.array().items(Joi.object()).default([]),
+        success: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        review: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        return: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+          return_reason: Joi.string().allow(null, ""),
+        })).required(),
+        credit: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        external: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
+        pending: Joi.array().items(Joi.object({
+          external_reference: Joi.string().required(),
+          description: Joi.string().required(),
+          reference_one: Joi.string().allow(null, ""),
+          amount: Joi.number().required(),
+          date: Joi.string().allow(null, ""),
+          updated_at: Joi.string().allow(null, ""),
+        })).required(),
       }).required(),
       cards: Joi.object({
-        expected_amount: Joi.number().default(0),
-        missing_count: Joi.number().default(0),
-        missing_amount: Joi.number().default(0),
-        missing_percentage: Joi.number().default(0),
-        expected_count: Joi.number().default(0),
-      }).required(),
+        expected_amount: Joi.number().allow(null),
+        missing_count: Joi.number().allow(null),
+        missing_amount: Joi.number().allow(null),
+        missing_percentage: Joi.number().allow(null),
+        expected_count: Joi.number().allow(null),
+      }).optional(),
     });
 
     const { error, value } = schema.validate(req.body);
@@ -69,7 +114,6 @@ module.exports = async (req, res) => {
       contact_id,
       start_date,
       end_date,
-      manual_date,
       logo,
       main_color_brand,
       secondary_color_brand,
@@ -77,6 +121,7 @@ module.exports = async (req, res) => {
       last_name,
       id_type,
       id_number,
+      manual_date,
       transactions,
       cards,
     } = value;
@@ -92,14 +137,6 @@ module.exports = async (req, res) => {
       external,
       pending,
     } = transactions;
-
-    const {
-      expected_amount,
-      missing_count,
-      missing_amount,
-      missing_percentage,
-      expected_count,
-    } = cards;
 
     const total_success = (
       success && success.length > 0 ? success : [{ amount: 0 }]
@@ -125,6 +162,18 @@ module.exports = async (req, res) => {
       pending && pending.length > 0 ? pending : [{ amount: 0 }]
     ).reduce((acc, curr) => acc + curr.amount, 0);
 
+    // Calcular valores de cards si no se proporcionan
+    const cardsData = cards || {};
+    
+    // Recaudo esperado: suma de todas las transacciones (6 estados)
+    const expected_amount = cardsData.expected_amount || total_success + total_review + total_credit + total_external + total_return + total_pending;
+    const expected_count = cardsData.expected_count || success.length + review.length + credit.length + external.length + return_data.length + pending.length;
+    
+    // Recaudo faltante: suma de review + las 3 cards de abajo (review + external + return + pending)
+    const missing_amount = cardsData.missing_amount || total_review + total_external + total_return + total_pending;
+    const missing_count = cardsData.missing_count || review.length + external.length + return_data.length + pending.length;
+    const missing_percentage = expected_amount > 0 ? missing_amount / expected_amount : 0;
+
     const techLogoData =
       "https://trazo-co.s3.amazonaws.com/logos/Logo+Trazo+Gris+100px.png";
     const techLogoDataUri = await downloadImageAsBase64(techLogoData);
@@ -146,6 +195,33 @@ module.exports = async (req, res) => {
       return formattedDate;
     }
 
+    function formatUpdatedDate(dateString) {
+      if (!dateString) return '';
+      
+      // Si está en formato ISO, convertir
+      let date;
+      if (dateString.includes('T')) {
+        date = new Date(dateString);
+        // Restar 5 horas para zona horaria de Colombia (UTC-5)
+        date = new Date(date.getTime() - 5 * 60 * 60 * 1000);
+      } else {
+        // Si ya está formateada, devolverla como está
+        return dateString;
+      }
+      
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear().toString().slice(-2);
+      
+      let hours = date.getHours();
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'p.m' : 'a.m';
+      hours = hours % 12 || 12;
+      
+      return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+    }
+
     function formatDateRange(start_date, end_date) {
       if (start_date === end_date) {
         return formatDateToSpanish(start_date);
@@ -157,10 +233,15 @@ module.exports = async (req, res) => {
     const lightGray = '#d9d9d9';
 
     const tableWithHeader = (color, fillColor, stateName, description, headers, rows) => {
+      // Definir anchos relativos para las columnas
+      const widths = headers.length === 5 
+        ? [90, 70, 'auto', '*', 60]  // Para tablas de 5 columnas (fecha, código, descripción, ref, valor)
+        : [90, 70, '*', '*', '*', 60];  // Para tablas de 6 columnas (devoluciones)
+      
       return {
         table: {
           headerRows: 2,
-          widths: Array(headers.length).fill('*'),
+          widths: widths,
           body: [
             [
               {
@@ -385,13 +466,13 @@ module.exports = async (req, res) => {
           '#EBFAF3',
           'Pagos exitosos',
           'Recaudos completados y confirmados en el sistema.',
-          ['Código', 'Descripción', 'Referencia 1', 'Referencia 2', 'Valor'],
+          ['Fecha actualización', 'Código', 'Descripción', 'Referencia 1', 'Valor'],
           success.map(item => [
+            formatUpdatedDate(item.updated_at),
             item.external_reference,
             item.description,
             item.reference_one,
-            item.reference_two,
-            `$${formatNumber(item.amount)}`
+            `$${formatNumberNoCurrency(item.amount)}`
           ])
         ),
         tableWithHeader(
@@ -399,71 +480,70 @@ module.exports = async (req, res) => {
           '#FFF2F0',
           'Por conciliar',
           'Recaudos realizados por el conductor pendientes de consignación.',
-          ['Código', 'Descripción', 'Referencia 1', 'Referencia 2', 'Valor'],
+          ['Fecha actualización', 'Código', 'Descripción', 'Referencia 1', 'Valor'],
           review.map(item => [
+            formatUpdatedDate(item.updated_at),
             item.external_reference,
             item.description,
             item.reference_one,
-            item.reference_two,
-            `$${formatNumber(item.amount)}`
+            `$${formatNumberNoCurrency(item.amount)}`
           ])
         ),
         tableWithHeader(
-          '#006F99',
-          '#EBFAFC',
+          '#006C9C',
+          '#E6F7FF',
           'Crédito',
-          'Producto entregado sin recaudo realizado en el momento.',
-          ['Código', 'Descripción', 'Referencia 1', 'Referencia 2', 'Valor'],
+          'Pagos realizados con saldo a favor del conductor.',
+          ['Fecha actualización', 'Código', 'Descripción', 'Referencia 1', 'Valor'],
           credit.map(item => [
+            formatUpdatedDate(item.updated_at),
             item.external_reference,
             item.description,
             item.reference_one,
-            item.reference_two,
-            `$${formatNumber(item.amount)}`
+            `$${formatNumberNoCurrency(item.amount)}`
           ])
         ),
         tableWithHeader(
-          '#495C67',
-          '#F6F7F8',
+          '#4D5B68',
+          '#F5F5F5',
           'Pago externo',
-          'Recaudo realizado directamente a la cuenta del comercio.',
-          ['Código', 'Descripción', 'Referencia 1', 'Referencia 2', 'Comentario', 'Valor'],
+          'Pagos realizados desde plataformas externas.',
+          ['Fecha actualización', 'Código', 'Descripción', 'Referencia 1', 'Valor'],
           external.map(item => [
+            formatUpdatedDate(item.updated_at),
             item.external_reference,
             item.description,
             item.reference_one,
-            item.reference_two,
-            item.comment,
-            `$${formatNumber(item.amount)}`
+            `$${formatNumberNoCurrency(item.amount)}`
           ])
         ),
         tableWithHeader(
-          '#482FB2',
-          '#F6F1FF',
+          '#5119B7',
+          '#F9F0FF',
           'Devoluciones',
-          'Producto no entregado y sin recaudo generado.',
-          ['Código', 'Descripción', 'Referencia 1', 'Referencia 2', 'Razón devolución', 'Valor'],
+          'Transacciones que fueron revertidas.',
+          ['Fecha actualización', 'Código', 'Descripción', 'Referencia 1', 'Motivo', 'Valor'],
           return_data.map(item => [
+            formatUpdatedDate(item.updated_at),
             item.external_reference,
             item.description,
             item.reference_one,
-            item.reference_two,
-            item.comment,
-            `$${formatNumber(item.amount)}`
+            item.return_reason || '',
+            `$${formatNumberNoCurrency(item.amount)}`
           ])
         ),
         tableWithHeader(
-          '#81400F',
-          '#FFF8EF',
+          '#7A4100',
+          '#FFF7E6',
           'Sin gestionar',
-          'Entregas que aun no se han procesado.',
-          ['Código', 'Descripción', 'Referencia 1', 'Referencia 2', 'Valor'],
+          'Cobros que no han sido procesados.',
+          ['Fecha actualización', 'Código', 'Descripción', 'Referencia 1', 'Valor'],
           pending.map(item => [
+            formatUpdatedDate(item.updated_at),
             item.external_reference,
             item.description,
             item.reference_one,
-            item.reference_two,
-            `$${formatNumber(item.amount)}`
+            `$${formatNumberNoCurrency(item.amount)}`
           ])
         ),
         {
@@ -520,8 +600,9 @@ module.exports = async (req, res) => {
             },
             {
               image: techLogoDataUri,
-              width: 20,
-              margin: [3, 0, 0, 0]
+              width: 24,
+              margin: [3, 0, 0, 0],
+              verticalAlignment: 'middle'
             }
           ]
         };
@@ -546,7 +627,7 @@ module.exports = async (req, res) => {
       extension: "pdf",
     });
   } catch (err) {
-    console.log(err);
+    console.error("Error generating PDF report:", err);
     res.status(500).json({
       status: "error",
       code: 500,
