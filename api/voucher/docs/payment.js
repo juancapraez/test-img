@@ -12,6 +12,9 @@ const { getPrinter } = require("../../../utils/pdfFonts");
 const { humanDate } = require("../../../utils/humanDate");
 const { hasValidApiKey } = require("../../../utils/auth");
 const { formatNumber } = require("../../../utils/formatNumber");
+const { getBankEntities } = require("../../../services/getBankEntities");
+const { getUserInfo } = require("../../../services/getUserInfo");
+const { getBarcode } = require("../../../services/getBarcode");
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -70,30 +73,13 @@ module.exports = async (req, res) => {
     const formatted_amount = formatNumber(amount, currency || "COP");
     const hasKey = hasValidApiKey(req);
 
-    // Helper functions (these should be implemented or imported)
-    const getUserInfo = async (data) => {
-      // Implement getUserInfo logic here
-      throw new Error("getUserInfo not implemented");
-    };
-
-    const getBankEntities = async () => {
-      // Implement getBankEntities logic here
-      throw new Error("getBankEntities not implemented");
-    };
-
     const downloadImageAsBase64 = async (url) => {
-      // Use downloadAndCacheLogo utility
       try {
         return await downloadAndCacheLogo(url);
       } catch (error) {
         console.log('Error downloading image:', error.message);
         return null;
       }
-    };
-
-    const getBarcode = async (data) => {
-      // Implement getBarcode logic here
-      throw new Error("getBarcode not implemented");
     };
 
     const formatDateToYYYYMMDD = (date) => {
@@ -130,23 +116,29 @@ module.exports = async (req, res) => {
     const entities_info = await getEntities();
     const cash_info = entities_info.find((entity) => entity.id == cash_id);
 
+    if (!cash_info) {
+      throw new Error(`No se encontró entidad bancaria con id: ${cash_id}`);
+    }
+
     const {
       name: agreement_bank,
-      logo: agreement_logo,
+      logo: cash_logo,
       instructions,
+      agreement,
     } = cash_info;
-    const { code: agreement_number, name: agreement_name } =
-      cash_info?.agreement;
+    const agreement_logo = cash_logo;
+    const agreement_number = agreement?.code;
+    const agreement_name = agreement?.name;
 
     const agreement_logo_uri = await downloadImageAsBase64(agreement_logo);
 
     const info = { type: "hash_id", identifier: contact_id };
     const user_info = await getUserInfoHandler(info);
 
-    const { first_name, last_name, id_type, id_number } =
-      user_info?.merchant;
+    const { first_name, last_name, user_id_type: id_type, user_id_number: id_number } =
+      user_info?.contact;
     const { logo, main_color_brand, secondary_color_brand } =
-      user_info?.merchant;
+      user_info?.business;
 
     const description_reference_one = reference_one
       ? description + ` (${reference_one})` 
@@ -189,7 +181,7 @@ module.exports = async (req, res) => {
     // --- Estructura del PDF ---
     const docDefinition = {
       pageSize: { width: 578, height: 827 },
-      pageMargins: [40, 40, 40, 32],
+      pageMargins: [40, 30, 40, 25],
       watermark: hasKey
         ? null
         : {
@@ -277,24 +269,24 @@ module.exports = async (req, res) => {
                             {
                               text: 'Pago en efectivo',
                               color: main_color_brand || '#007867',
-                              fontSize: 20,
+                              fontSize: 18,
                               bold: true,
-                              margin: [0, 0, 0, 4],
+                              margin: [0, 0, 0, 2],
                             },
                             {
                               text: formatted_date,
-                              fontSize: 10,
+                              fontSize: 9,
                               color: '#7a7a7a',
-                              margin: [0, 0, 0, 8],
+                              margin: [0, 2, 0, 0],
                             }
                           ]
                         },
                         {
                           image: logoDataUri,
-                          width: 100,
-                          maxHeight: 50,
+                          width: 80,
+                          maxHeight: 45,
                           alignment: 'right',
-                          margin: [0, -6, 0, 0],
+                          margin: [0, 0, 0, 0],
                         }
                       ]
                     }
@@ -304,8 +296,8 @@ module.exports = async (req, res) => {
               layout: {
                 paddingLeft: () => 14,
                 paddingRight: () => 14,
-                paddingTop: () => 20,
-                paddingBottom: () => 20,
+                paddingTop: () => 15,
+                paddingBottom: () => 15,
                 hLineWidth: () => 0,
                 vLineWidth: () => 0
               },
@@ -315,7 +307,7 @@ module.exports = async (req, res) => {
         },
 
         // Sección: Datos de la transacción
-        { text: 'Datos de la transacción', style: 'sectionTitle', color: main_color_brand || '#007867' },
+        { text: 'Datos de la transacción', style: 'sectionTitle', color: main_color_brand || '#007867', margin: [0, 15, 0, 6] },
         {
           columns: [
             [
@@ -341,7 +333,7 @@ module.exports = async (req, res) => {
           ]
         },
 
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 498, y2: 0, lineWidth: 1, lineColor: '#e3e3e3' }], margin: [0, 10, 0, 10] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 498, y2: 0, lineWidth: 1, lineColor: '#e3e3e3' }], margin: [0, 6, 0, 6] },
 
         // Sección: Datos del pago
         { text: 'Datos del pago', style: 'sectionTitle', color: main_color_brand || '#007867' },
@@ -378,7 +370,7 @@ module.exports = async (req, res) => {
           style: 'value'
         },
 
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 498, y2: 0, lineWidth: 1, lineColor: '#e3e3e3' }], margin: [0, 10, 0, 10] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 498, y2: 0, lineWidth: 1, lineColor: '#e3e3e3' }], margin: [0, 6, 0, 6] },
 
         // Sección: Datos del pagador
         { text: 'Datos del pagador', style: 'sectionTitle', color: main_color_brand || '#007867' },
@@ -405,15 +397,15 @@ module.exports = async (req, res) => {
                   x: 0,
                   y: 0,
                   w: 498,
-                  h: 140,
+                  h: 125,
                   r: 8,
                   color: '#f2f2f2'
                 }
               ],
-              margin: [0, 20, 0, 0]
+              margin: [0, 10, 0, 0]
             },
             {
-              margin: [0, -130, 0, 0],
+              margin: [20, -115, 20, 10],
               stack: [
                 { text: '¿Cómo pagar en efectivo?', style: 'instructionTitle' },
                 { text: '1. Dirígete a la entidad bancaria más cercana.', style: 'instructionText' },
@@ -425,7 +417,7 @@ module.exports = async (req, res) => {
                       svg: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path fill="none" stroke="' + (main_color_brand || '#007867') + '" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 1 1 7.072 0l-.548.547A3.37 3.37 0 0 0 14 18.469V19a2 2 0 1 1-4 0v-.531c0-.895-.356-1.754-.988-2.386z"/></svg>',
                       width: 18,
                       height: 18,
-                      margin: [0, 2, 4, 0],
+                      margin: [0, 2, 4, 2],
                     },
                     {
                       text: instructions,
@@ -433,8 +425,7 @@ module.exports = async (req, res) => {
                     }
                   ]
                 }
-              ],
-              margin: [20, 10, 20, 10]
+              ]
             }
           ]
         },
@@ -442,9 +433,10 @@ module.exports = async (req, res) => {
         // Footer instrucciones
         {
           text: '¿Necesitas ayuda? Estamos para ayudarte, escribe a la línea de Trazo Soporte en WhatsApp +57 316 099 1644',
-          style: 'footerHelp'
+          style: 'footerHelp',
+          margin: [0, 10, 0, 6]
         },
-        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 498, y2: 0, lineWidth: 1, lineColor: '#e3e3e3' }], margin: [0, 10, 0, 10] },
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 498, y2: 0, lineWidth: 1, lineColor: '#e3e3e3' }], margin: [0, 11, 0, 6] },
 
         // Código de barras
         {
@@ -453,7 +445,7 @@ module.exports = async (req, res) => {
             {
               image: 'data:image/png;base64,' + barcodeBase64,
               width: 350,
-              margin: [0, 20, 0, 0]
+              margin: [0, 25, 0, 0]
             },
 
             // Columna con ambos cuadros (Referencia/Convenio + Total)
@@ -511,11 +503,12 @@ module.exports = async (req, res) => {
 
                 // Cuadro para Total a pagar
                 {
+                  margin: [0, 5, 0, 0],
                   canvas: [
                     {
                       type: 'rect',
                       x: 0,
-                      y: 14,
+                      y: 0,
                       w: 148,
                       h: 32,
                       r: 8,
@@ -524,12 +517,13 @@ module.exports = async (req, res) => {
                   ]
                 },
                 {
+                  margin: [0, -27, 0, 10],
                   canvas: [
                     {
                       type: 'rect',
-                      x: 60,
-                      y: -27,
-                      w: 88,
+                      x: 5,
+                      y: 0,
+                      w: 138,
                       h: 22,
                       r: 8,
                       color: 'white'
@@ -537,11 +531,10 @@ module.exports = async (req, res) => {
                   ]
                 },
                 {
-                  margin: [-140, -40, 0, 10],
-                  columns: [
-                    { text: 'Total a pagar', style: 'captionSmall', margin: [148, 16, 0, 2], width: 'auto', bold: true, color: 'black' },
-                    { text: '$' + formatNumber(parseFloat(amount), currency), style: 'barcodeAmount' }
-                  ]
+                  margin: [0, -29, 0, 40],
+                  text: formatNumber(parseFloat(amount), currency),
+                  style: 'barcodeAmount',
+                  alignment: 'center'
                 }
               ]
             }
@@ -562,16 +555,16 @@ module.exports = async (req, res) => {
         },
       ],
       styles: {
-        sectionTitle: { font: "RedHatDisplay", fontSize: 14, bold: true, color: main_color_brand || '#007867', margin: [0, 8, 0, 8] },
-        caption: { font: "RedHatDisplay", fontSize: 10, color: 'gray', margin: [0, 0, 0, 2] },
-        value: { font: "RedHatDisplay", fontSize: 13, bold: true, color: 'black', margin: [0, 0, 0, 8] },
-        instructionTitle: { font: "RedHatDisplay", fontSize: 12, bold: true, margin: [0, 0, 0, 6] },
-        instructionText: { font: "RedHatDisplay", fontSize: 11, margin: [0, 0, 0, 2] },
-        instructionNote: { font: "RedHatDisplay", fontSize: 10, color: main_color_brand || '#007867', maxWidth: 430, margin: [2, 4, 0, 0] },
-        footerHelp: { font: "RedHatDisplay", fontSize: 10, color: 'gray', alignment: 'center', margin: [0, 6, 0, 10] },
+        sectionTitle: { font: "RedHatDisplay", fontSize: 13, bold: true, color: main_color_brand || '#007867', margin: [0, 6, 0, 6] },
+        caption: { font: "RedHatDisplay", fontSize: 9, color: 'gray', margin: [0, 0, 0, 2] },
+        value: { font: "RedHatDisplay", fontSize: 12, bold: true, color: 'black', margin: [0, 0, 0, 6] },
+        instructionTitle: { font: "RedHatDisplay", fontSize: 11, bold: true, margin: [0, 0, 0, 4] },
+        instructionText: { font: "RedHatDisplay", fontSize: 10, margin: [0, 0, 0, 2] },
+        instructionNote: { font: "RedHatDisplay", fontSize: 9, color: main_color_brand || '#007867', maxWidth: 430, margin: [2, 2, 0, 0] },
+        footerHelp: { font: "RedHatDisplay", fontSize: 9, color: 'gray', alignment: 'center', margin: [0, 4, 0, 6] },
         captionSmall: { font: "RedHatDisplay", fontSize: 9, color: 'gray', alignment: 'center', margin: [0, -1, 0, 2] },
         barcodeText: { font: "RedHatDisplay", fontSize: 12, bold: true, alignment: 'center' },
-        barcodeAmount: { font: "RedHatDisplay", fontSize: 10, italic: true, bold: true, alignment: 'right', color: '#000', margin: [0, 17, 8, 0] },
+        barcodeAmount: { font: "RedHatDisplay", fontSize: 12, italic: true, bold: true, alignment: 'right', color: '#000', margin: [0, 17, 8, 0] },
         footerNote: { font: "RedHatDisplay", fontSize: 8, color: '#848688', margin: [0, 20, 0, 0] },
         footerNoteRight: { font: "RedHatDisplay", fontSize: 9, color: '#848688', margin: [0, 20, 0, 0], alignment: 'right' },
       },
